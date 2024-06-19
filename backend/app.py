@@ -20,7 +20,7 @@ def stream():
         while user_messages:
             user_message = user_messages.pop(0)
             responses = [
-                f" Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since  of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum. This is a response to: {user_message}  $end$"
+                f" Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since  of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum. This is a response to: {user_message}"
                 
             ]
             for response in responses:

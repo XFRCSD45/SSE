@@ -1,87 +1,105 @@
 // src/App.js
-import React, { useState } from "react";
-import "./App.css";
+import React, { useEffect, useRef, useState } from 'react';
+import './App.css';
+import 'tailwindcss/tailwind.css';
 
 function App() {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-
+  const chatRef = useRef(null);
   const sendMessage = async () => {
     if (input.trim()) {
-      setMessages([...messages, { text: input, sender: "user" }]);
-      setInput("");
+      const userMessage = { text: input, sender: 'user' };
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        userMessage,
+        { text: '', sender: 'bot' } // Placeholder for bot's response
+      ]);
+      setInput('');
       setIsTyping(true);
 
-      await fetch("http://localhost:5000/api/chatbot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+      await fetch('http://localhost:5000/api/chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input })
       });
 
-      const eventSource = new EventSource(
-        "http://localhost:5000/api/chatbot/stream"
-      );
+      const eventSource = new EventSource('http://localhost:5000/api/chatbot/stream');
       let newMessage = "";
+
       eventSource.onmessage = (event) => {
-        const word = event.data.trim();
-        if (word === "$end$") {
-          setIsTyping(false);
-          eventSource.close();
-          return;
-        }
-        console.log(word);
-        if (word) {
-          newMessage += `${word} `;
-          setMessages((prevMessages) => [
-            ...prevMessages.slice(0, -1),
-            { text: newMessage, sender: "bot" },
-          ]);
+        const char = event.data.trim();
+        if (char) {
+          newMessage +=`${char} `;
+          setMessages((prevMessages) => {
+            const updatedMessages = [...prevMessages];
+            updatedMessages[updatedMessages.length - 1] = { text: newMessage, sender: 'bot' };
+            return updatedMessages;
+          });
         } else {
-          console.log("finishedd");
           setIsTyping(false);
           eventSource.close();
         }
       };
+
       eventSource.onerror = () => {
+        setIsTyping(false);
         eventSource.close();
       };
-      const handleEventSourceClose = () => {
-        setIsTyping(false); // Set isTyping to false when all messages are received
-      };
-      eventSource.onclose = handleEventSourceClose;
     }
   };
-
+  useEffect(()=>{
+     if(chatRef.current)
+      {
+        chatRef.current.scrollIntoView ({behavior:"smooth"});
+      }
+  },[messages])
   return (
-    <div className="App">
-      <div className="chat-container">
-        <div className="chat-window">
+    <div className="flex flex-col items-center h-screen bg-gray-100 p-4 w-full mx-auto">
+      <div className="w-5/6 bg-white shadow-lg rounded-lg p-4 flex flex-col h-full items-center">
+        <div className="flex-1  w-full overflow-y-auto no-scrollbar ">
           {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.sender}`}>
-              {msg.text}
-              {isTyping && (
-                <span>
-                  <div class="spinner">
-                    <div class="bounce1"></div>
-                    <div class="bounce2"></div>
-                    <div class="bounce3"></div>
-                  </div>
-                </span>
-              )}
+            <div
+              key={index}
+              className={`flex my-2  ${
+                msg.sender === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              <div
+                 ref={ index===messages.length-1 ?chatRef:null}
+                className={`m-2 p-2 rounded-lg  max-w-[80%]  ${
+                  msg.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-900'
+                }`}
+              >
+                {msg.text}
+                {isTyping && msg.sender ==='bot' && index===messages.length-1 &&  (
+           
+           <div className="p-2 rounded-lg inline-block bg-gray-300 text-gray-900 typing-animation">
+             <span>.</span>
+             <span>.</span>
+             <span>.</span>
+           </div>
+         
+       )}
+              </div>
+             
             </div>
           ))}
-          {/* {isTyping && <div className="typing-animation">...</div>} */}
+          
         </div>
-        <div className="input-container">
+        <div className="flex mt-4 w-4/6 ">
           <input
-            className="input-field"
+            className="flex-1 p-2 border rounded-lg mr-2"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
             placeholder="Type a message..."
           />
-          <button className="send-button" onClick={sendMessage}>
+          <button
+            className="p-2 bg-blue-500 text-white rounded-lg"
+            onClick={sendMessage}
+          >
             Send
           </button>
         </div>
